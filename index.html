@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chaotic Kitty Generator</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    body {
+      font-family: "Comic Sans MS", "Chalkboard SE", sans-serif;
+      background-color: #fdf6e3;
+      color: #333;
+      text-align: center;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 1.5rem;
+      border: 4px dashed #ff6f61;
+      border-radius: 12px;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #ff6f61;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background-color: #e05a4d; }
+    #output {
+      margin-top: 1.5rem;
+      min-height: 256px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #eee;
+      border: 2px solid #ccc;
+    }
+    #output img {
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+    .status {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐱 Jank Kitty Generator</h1>
+    <p>Powered by unreliable free endpoints and pure luck.</p>
+
+    <input type="text" id="vibe" placeholder="Optional vibe (e.g., eating spaghetti, 2007 webcam)">
+
+    <select id="provider">
+      <option value="pollinations">1. Pollinations (Keyless URL / Low-Res Roulette)</option>
+      <option value="puter">2. Puter.js (Low-Quality Flare Model)</option>
+      <option value="chaos">3. Chaos Mode (Randomly Fail Over)</option>
+    </select>
+
+    <button onclick="summonKitty()">Summon Questionable Cat</button>
+
+    <div id="output">
+      <span>Your cursed feline will appear here.</span>
+    </div>
+    <div class="status" id="status">Ready.</div>
+  </div>
+
+  <script>
+    const cursedModifiers = [
+      "low quality jpeg artifacts, blurry 2005 flip phone photo",
+      "weirdly elongated neck, cursed flash photography",
+      "ms paint background, slightly melted face, crusty compression",
+      "bad taxidermy energy, harsh fluorescent lighting, grainy"
+    ];
+
+    function buildPrompt() {
+      const userVibe = document.getElementById("vibe").value.trim();
+      const modifier = cursedModifiers[Math.floor(Math.random() * cursedModifiers.length)];
+      return `a funny weird cat ${userVibe}, ${modifier}`;
+    }
+
+    async function tryPollinations(prompt) {
+      const seed = Math.floor(Math.random() * 999999);
+      const url = `https://pollinations.ai{encodeURIComponent(prompt)}?width=256&height=256&seed=${seed}&nologo=true`;
+      
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const timeout = setTimeout(() => reject(new Error("Pollinations timed out")), 12000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve(img);
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error("Pollinations returned an error"));
+        };
+        img.src = url;
+      });
+    }
+
+    async function tryPuter(prompt) {
+      if (typeof puter === "undefined") {
+        throw new Error("Puter SDK failed to load");
+      }
+      return await puter.ai.txt2img(prompt, {
+        model: "openai/gpt-image-2.6-flare",
+        quality: "low"
+      });
+    }
+
+    async function summonKitty() {
+      const output = document.getElementById("output");
+      const status = document.getElementById("status");
+      const choice = document.getElementById("provider").value;
+      const prompt = buildPrompt();
+
+      output.innerHTML = "<span>Summoning pixels from the void...</span>";
+      status.textContent = `Prompt: "${prompt}"`;
+
+      try {
+        let imgElement;
+        if (choice === "pollinations") {
+          imgElement = await tryPollinations(prompt);
+        } else if (choice === "puter") {
+          imgElement = await tryPuter(prompt);
+        } else {
+          try {
+            status.textContent = "Chaos Mode: Trying Pollinations first...";
+            imgElement = await tryPollinations(prompt);
+          } catch (e) {
+            status.textContent = "Pollinations died. Falling back to Puter low-quality...";
+            imgElement = await tryPuter(prompt);
+          }
+        }
+        output.innerHTML = "";
+        output.appendChild(imgElement);
+        status.textContent = "Success! Behold your glorious mess.";
+      } catch (err) {
+        output.innerHTML = `<img src="https://cataas.com{Date.now()}" alt="Emergency backup cat">`;
+        status.textContent = `AI APIs failed (${err.message}). Loaded an emergency real cat instead.`;
+      }
+    }
+  </script>
+</body>
+</html>
